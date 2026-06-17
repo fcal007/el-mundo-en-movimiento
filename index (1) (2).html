@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El mundo en movimiento — Los 5 destinos que todos eligen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d1117;
+  --bg-alt:    #111827;
+  --surface:   #1a2234;
+  --text:      #e6edf3;
+  --dim:       #8b949e;
+  --border:    rgba(255,255,255,0.07);
+  --bangkok:   #FF6B6B;
+  --paris:     #4ECDC4;
+  --london:    #45B7D1;
+  --dubai:     #FFA07A;
+  --singapore: #98D8C8;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.75;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 2px; }
+
+/* ── PROGRESS ── */
+#progress {
+  position: fixed; top: 0; left: 0; z-index: 1000;
+  height: 2px; width: 0%;
+  background: linear-gradient(90deg, var(--paris), var(--london));
+  transition: width 0.1s linear;
+}
+
+/* ── HERO ── */
+#hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  padding: 6rem 2rem;
+  overflow: hidden;
+}
+
+#hero-canvas { position: absolute; inset: 0; pointer-events: none; }
+
+.hero-inner { position: relative; z-index: 1; max-width: 840px; }
+
+.hero-tag {
+  display: inline-block;
+  font-size: 0.68rem; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--paris);
+  border: 1px solid rgba(78,205,196,0.4);
+  padding: 0.28em 0.9em; border-radius: 2px;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: clamp(2.3rem, 5.5vw, 4.8rem);
+  line-height: 1.07;
+  margin-bottom: 1.5rem;
+  text-wrap: pretty;
+}
+
+.hero-sub {
+  font-size: clamp(0.95rem, 1.8vw, 1.12rem);
+  color: var(--dim);
+  font-style: italic;
+  line-height: 1.9;
+  max-width: 600px;
+  margin: 0 auto 3.5rem;
+}
+
+.scroll-hint {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0.6rem;
+  font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--dim);
+}
+.scroll-hint::after {
+  content: '';
+  width: 1px; height: 46px;
+  background: linear-gradient(to bottom, var(--dim), transparent);
+  animation: line-drop 2s ease-in-out infinite;
+}
+@keyframes line-drop {
+  0%,100% { opacity: 0; transform: scaleY(0); transform-origin: top; }
+  40%,60%  { opacity: 1; transform: scaleY(1); }
+}
+
+/* ── INTRO ── */
+#intro {
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  padding: 10rem 2rem;
+  display: flex; flex-direction: column; align-items: center;
+  text-align: center; gap: 1.25rem;
+}
+
+.giant {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(5rem, 14vw, 11rem);
+  font-weight: 900; line-height: 1;
+  background: linear-gradient(130deg, var(--paris) 20%, var(--london) 80%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.giant-label {
+  font-size: clamp(0.95rem, 2vw, 1.2rem);
+  color: var(--dim); max-width: 480px; line-height: 1.7;
+}
+
+/* ── SECTIONS ── */
+.section {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 5vw;
+  align-items: start;
+  min-height: 90vh;
+  padding: 9rem 7vw;
+  border-top: 1px solid var(--border);
+}
+
+.section:nth-of-type(even) { background: var(--bg-alt); }
+
+.s-text {
+  position: sticky;
+  top: 24vh;
+}
+
+.s-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 4rem; font-weight: 900;
+  color: rgba(255,255,255,0.04);
+  line-height: 1; margin-bottom: 0.6rem;
+  user-select: none;
+}
+
+.s-tag {
+  font-size: 0.67rem; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--paris); margin-bottom: 0.6rem;
+}
+
+h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.6rem, 2.4vw, 2.25rem);
+  font-weight: 700; line-height: 1.18;
+  margin-bottom: 1.1rem; text-wrap: pretty;
+}
+
+.s-body {
+  font-size: 0.96rem; color: var(--dim);
+  line-height: 1.88; text-wrap: pretty;
+}
+
+.s-body em { color: var(--text); font-style: normal; font-weight: 500; }
+
+.callout {
+  margin-top: 1.4rem;
+  padding: 0.85rem 1rem;
+  background: rgba(78,205,196,0.07);
+  border-left: 2px solid var(--paris);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.82rem; color: var(--dim); line-height: 1.6;
+}
+
+/* ── VIZ BOXES ── */
+.chart-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.6rem;
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.chart-box.in { opacity: 1; transform: none; }
+
+.box-label {
+  font-size: 0.68rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 1.2rem;
+}
+
+/* ── MAP ── */
+#world-svg { width: 100%; height: auto; display: block; }
+
+#map-tip {
+  position: fixed; z-index: 999;
+  background: rgba(8,12,18,0.96);
+  border: 1px solid var(--border); border-radius: 7px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.82rem; color: var(--text);
+  pointer-events: none;
+  opacity: 0; transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+/* ── ORIGINS ── */
+.origins-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.o-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 1.1rem;
+  opacity: 0; transform: translateY(12px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.o-card.in { opacity: 1; transform: none; }
+
+.o-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem; }
+
+.o-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+.o-city-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.92rem; font-weight: 700;
+}
+
+.o-row { margin-bottom: 0.52rem; }
+
+.o-row-top {
+  display: flex; justify-content: space-between;
+  font-size: 0.79rem; color: var(--dim);
+  margin-bottom: 0.22rem;
+}
+
+.o-pct { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.o-track { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; }
+
+.o-fill { height: 100%; border-radius: 2px; width: 0%; transition: width 0.85s cubic-bezier(.4,0,.2,1); }
+
+/* ── CLOSING ── */
+#closing {
+  background: var(--bg-alt);
+  border-top: 1px solid var(--border);
+  padding: 9rem 5vw;
+  text-align: center;
+}
+
+.closing-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 700; margin-bottom: 0.7rem;
+}
+
+.closing-sub { color: var(--dim); font-size: 1rem; margin-bottom: 3.5rem; }
+
+.city-cards {
+  display: flex; flex-wrap: wrap;
+  gap: 1.2rem; justify-content: center;
+  margin-bottom: 4.5rem;
+}
+
+.c-card {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.75rem 1.4rem; text-align: center;
+  min-width: 145px; flex: 1; max-width: 175px;
+}
+
+.c-card-city {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem; font-weight: 700;
+  margin-bottom: 0.55rem;
+}
+
+.c-card-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.3rem; font-weight: 900; line-height: 1;
+  margin-bottom: 0.3rem;
+}
+
+.c-card-lbl {
+  font-size: 0.65rem; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+
+.closing-quote {
+  max-width: 560px; margin: 0 auto;
+  font-size: 1.05rem; font-style: italic;
+  color: var(--dim); line-height: 1.95;
+  text-wrap: pretty;
+}
+.closing-quote::before { content: '\201C'; }
+.closing-quote::after  { content: '\201D'; }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2.5rem 5vw;
+  text-align: center;
+  display: flex; flex-direction: column; gap: 0.4rem;
+}
+footer p { font-size: 0.77rem; color: var(--dim); }
+footer strong { color: var(--text); }
+
+/* ── FADE-IN ── */
+.fi { opacity: 0; transform: translateY(18px); transition: opacity 0.65s ease, transform 0.65s ease; }
+.fi.in { opacity: 1; transform: none; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 860px) {
+  .section { grid-template-columns: 1fr; min-height: auto; padding: 5rem 5vw; gap: 2.5rem; }
+  .s-text { position: static; }
+  .s-num { font-size: 3rem; }
+  .origins-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  h1 { font-size: 2rem; }
+  .giant { font-size: 4.5rem; }
+  .c-card { min-width: 130px; }
+}
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="map-tip"></div>
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-inner">
+    <span class="hero-tag">Visualización de Datos &nbsp;·&nbsp; UTDT 2025</span>
+    <h1>El mundo en movimiento:<br>los 5 destinos que todos eligen</h1>
+    <p class="hero-sub">"Cada año, decenas de millones de personas convergen en cinco ciudades. ¿Cuáles son? ¿Qué las hace irresistibles? ¿Y qué pasó cuando el mundo se detuvo?"</p>
+    <div class="scroll-hint">Scrolleá para explorar</div>
+  </div>
+</section>
+
+<!-- ════════════════════ INTRO ════════════════════ -->
+<section id="intro">
+  <p class="giant fi">1.400 M</p>
+  <p class="giant-label fi">viajes internacionales registrados en 2019 —<br>el año pico antes de que todo cambiara.</p>
+</section>
+
+<!-- ════════════════════ 01 · MAPA ════════════════════ -->
+<section class="section" id="s-map">
+  <div class="s-text fi">
+    <div class="s-num">01</div>
+    <p class="s-tag">Geografía global</p>
+    <h2>Cinco ciudades. Cuatro continentes. Un mismo imán.</h2>
+    <p class="s-body">No comparten idioma ni hemisferio, y aun así cada año decenas de millones de personas eligen alguna de estas cinco ciudades como destino.<br><br><em>"Cinco ciudades en cuatro continentes distintos. Todas compiten por el mismo título: la más visitada del mundo."</em></p>
+    <div class="callout">Hover sobre las burbujas para ver los datos de cada ciudad.</div>
+  </div>
+  <div class="s-viz">
+    <div class="chart-box" id="map-box">
+      <p class="box-label">Visitantes internacionales 2019 — tamaño proporcional</p>
+      <svg id="world-svg" viewBox="0 0 960 500"></svg>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ 02 · RANKING ════════════════════ -->
+<section class="section" id="s-ranking">
+  <div class="s-text fi">
+    <div class="s-num">02</div>
+    <p class="s-tag">El ranking 2019</p>
+    <h2>Bangkok lidera. La sorpresa que nadie esperaba.</h2>
+    <p class="s-body">Con <em>22,8 millones de visitantes</em>, la capital tailandesa supera incluso a París. La gastronomía callejera, el exotismo del sudeste asiático y la accesibilidad económica la convirtieron en el destino más popular del planeta.</p>
+    <div class="callout">Datos: visitantes internacionales 2019, último año pico pre-pandemia.</div>
+  </div>
+  <div class="s-viz">
+    <div class="chart-box" id="bar-box">
+      <p class="box-label">Millones de visitantes internacionales — 2019</p>
+      <canvas id="bar-chart"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ 03 · LÍNEA DE TIEMPO ════════════════════ -->
+<section class="section" id="s-timeline">
+  <div class="s-text fi">
+    <div class="s-num">03</div>
+    <p class="s-tag">La pandemia lo cambió todo</p>
+    <h2>2020: el año en que el turismo global se detuvo.</h2>
+    <p class="s-body">Bangkok pasó de <em>22,8M a apenas 2,5M</em> de visitantes en un año. Dubai resistió mejor gracias a su turismo de negocios y su ubicación estratégica.<br><br>La recuperación fue desigual: en 2023 algunos destinos casi igualaron sus máximos históricos. Otros todavía no.</p>
+  </div>
+  <div class="s-viz">
+    <div class="chart-box" id="line-box">
+      <p class="box-label">Evolución de visitantes internacionales 2015–2023 (millones)</p>
+      <canvas id="line-chart"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ 04 · SCATTER ════════════════════ -->
+<section class="section" id="s-scatter">
+  <div class="s-text fi">
+    <div class="s-num">04</div>
+    <p class="s-tag">El dinero no es proporcional</p>
+    <h2>Más turistas no siempre significa más ingresos.</h2>
+    <p class="s-body">Dubai recibe <em>menos turistas que Bangkok</em>, pero cada uno gasta casi el doble. Con tan solo 16,7M de visitantes genera <em>USD 29.800 millones</em> en ingresos turísticos.<br><br>El tamaño de cada burbuja refleja los ingresos totales. El turismo de lujo tiene su propia lógica.</p>
+  </div>
+  <div class="s-viz">
+    <div class="chart-box" id="scatter-box">
+      <p class="box-label">Visitantes vs. gasto/turista &nbsp;·&nbsp; Burbuja = ingresos totales</p>
+      <canvas id="scatter-chart"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════ 05 · ORÍGENES ════════════════════ -->
+<section class="section" id="s-origins">
+  <div class="s-text fi">
+    <div class="s-num">05</div>
+    <p class="s-tag">¿De dónde vienen?</p>
+    <h2>Cada ciudad tiene su propia red de origen.</h2>
+    <p class="s-body">Bangkok atrae a chinos y malayos. Londres, a americanos. Dubai, a indios y saudíes. Los flujos turísticos reflejan geografía, cultura y lazos históricos — y revelan mucho sobre los vínculos entre naciones.</p>
+  </div>
+  <div class="s-viz" id="origins-viz">
+    <div class="origins-grid" id="origins-grid"></div>
+  </div>
+</section>
+
+<!-- ════════════════════ CIERRE ════════════════════ -->
+<section id="closing">
+  <p class="s-tag" style="margin-bottom:0.75rem;">Vuelta al punto de partida</p>
+  <h2 class="closing-title fi">¿A dónde llegamos en 2023?</h2>
+  <p class="closing-sub fi">La recuperación fue notable, aunque aún incompleta para algunos destinos.</p>
+  <div class="city-cards" id="closing-cards"></div>
+  <p class="closing-quote fi">El turismo masivo conecta culturas, pero también presiona ecosistemas y comunidades locales. Conocer las cifras es el primer paso para entender el fenómeno.</p>
+</section>
+
+<!-- ════════════════════ FOOTER ════════════════════ -->
+<footer>
+  <p><strong>Visualización de Datos</strong> &nbsp;·&nbsp; Universidad Torcuato Di Tella &nbsp;·&nbsp; 2025</p>
+  <p>Fuentes: Euromonitor International &nbsp;·&nbsp; UNWTO &nbsp;·&nbsp; MasterCard Global Destination Cities Index</p>
+</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const CITIES = [
+  { name:'Bangkok',  country:'Tailandia',       v19:22.8, v23:20.0, lat:13.7,  lon:100.5, color:'#FF6B6B', ldx:15, ldy:0,  la:'start' },
+  { name:'París',    country:'Francia',          v19:19.1, v23:18.0, lat:48.8,  lon:2.3,   color:'#4ECDC4', ldx:-15,ldy:0,  la:'end'   },
+  { name:'Londres',  country:'Reino Unido',      v19:19.9, v23:17.5, lat:51.5,  lon:-0.1,  color:'#45B7D1', ldx:15, ldy:-10,la:'start' },
+  { name:'Dubai',    country:'Emiratos Árabes',  v19:16.7, v23:17.2, lat:25.2,  lon:55.3,  color:'#FFA07A', ldx:13, ldy:0,  la:'start' },
+  { name:'Singapur', country:'Singapur',         v19:19.1, v23:16.0, lat:1.3,   lon:103.8, color:'#98D8C8', ldx:14, ldy:6,  la:'start' },
+];
+
+const TIME_DATA = {
+  years:    [2015,2016,2017,2018,2019,2020,2021,2022,2023],
+  Bangkok:  [14.2,15.9,18.7,20.1,22.8, 2.5, 0.4,11.4,20.0],
+  París:    [15.0,13.8,15.8,17.4,19.1, 3.8, 4.5,16.0,18.0],
+  Londres:  [17.4,18.6,19.8,20.3,19.9, 2.7, 3.5,15.7,17.5],
+  Dubai:    [11.6,12.3,14.9,15.9,16.7, 5.5, 7.3,14.4,17.2],
+  Singapur: [15.1,16.4,17.4,18.5,19.1, 2.7, 1.0,13.2,16.0],
+};
+
+const SCATTER = [
+  { name:'Bangkok',  visitors:22.8, spending:917,  revenue:20.9 },
+  { name:'París',    visitors:19.1, spending:1016, revenue:19.4 },
+  { name:'Londres',  visitors:19.9, spending:1110, revenue:22.1 },
+  { name:'Dubai',    visitors:16.7, spending:1791, revenue:29.8 },
+  { name:'Singapur', visitors:19.1, spending:966,  revenue:18.5 },
+];
+
+const ORIGINS = [
+  { city:'Bangkok',  list:[['🇨🇳','China',28],['🇲🇾','Malasia',10],['🇮🇳','India',8]] },
+  { city:'París',    list:[['🇺🇸','Estados Unidos',18],['🇬🇧','Reino Unido',12],['🇩🇪','Alemania',9]] },
+  { city:'Londres',  list:[['🇺🇸','Estados Unidos',22],['🇫🇷','Francia',8],['🇦🇺','Australia',6]] },
+  { city:'Dubai',    list:[['🇮🇳','India',20],['🇸🇦','Arabia Saudita',15],['🇬🇧','Reino Unido',8]] },
+  { city:'Singapur', list:[['🇮🇩','Indonesia',18],['🇨🇳','China',15],['🇮🇳','India',11]] },
+];
+
+// ── CHART.JS DEFAULTS ─────────────────────────────────────────────────────────
+Chart.defaults.color = '#8b949e';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+
+// ── PROGRESS BAR ──────────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const pct = window.scrollY / (document.body.scrollHeight - innerHeight) * 100;
+  document.getElementById('progress').style.width = pct + '%';
+});
+
+// ── HERO PARTICLES ────────────────────────────────────────────────────────────
+(function () {
+  const cvs = document.getElementById('hero-canvas');
+  const ctx = cvs.getContext('2d');
+  const pts = [];
+  function resize() { cvs.width = innerWidth; cvs.height = innerHeight; }
+  resize();
+  addEventListener('resize', resize);
+  for (let i = 0; i < 90; i++) pts.push({
+    x: Math.random() * innerWidth, y: Math.random() * innerHeight,
+    vx: (Math.random() - 0.5) * 0.32, vy: (Math.random() - 0.5) * 0.32,
+    r: Math.random() * 1.4 + 0.3, a: Math.random() * 0.32 + 0.06,
+  });
+  function tick() {
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > cvs.width)  p.vx *= -1;
+      if (p.y < 0 || p.y > cvs.height) p.vy *= -1;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${p.a})`; ctx.fill();
+    });
+    for (let i = 0; i < pts.length; i++)
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+        const d = Math.hypot(dx, dy);
+        if (d < 115) {
+          ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.strokeStyle = `rgba(255,255,255,${(1 - d / 115) * 0.06})`;
+          ctx.lineWidth = 0.5; ctx.stroke();
+        }
+      }
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+// ── INTERSECTION OBSERVER UTIL ────────────────────────────────────────────────
+const _cbMap = new WeakMap();
+const _io = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting && _cbMap.has(e.target)) {
+      _cbMap.get(e.target)();
+      _cbMap.delete(e.target);
+      _io.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+function whenVisible(el, cb) { _cbMap.set(el, cb); _io.observe(el); }
+
+// Fade-in elements
+document.querySelectorAll('.fi').forEach(el => whenVisible(el, () => el.classList.add('in')));
+
+// ── D3 WORLD MAP ──────────────────────────────────────────────────────────────
+(async function () {
+  const mapBox = document.getElementById('map-box');
+  const svg = d3.select('#world-svg');
+  const W = 960, H = 500;
+  const proj = d3.geoNaturalEarth1().scale(153).translate([W / 2, H / 2]);
+  const pathGen = d3.geoPath().projection(proj);
+  const tip = document.getElementById('map-tip');
+
+  // Ocean
+  svg.append('rect').attr('width', W).attr('height', H).attr('fill', '#090e16');
+  // Graticule
+  svg.append('path')
+    .datum(d3.geoGraticule()())
+    .attr('fill', 'none')
+    .attr('stroke', 'rgba(255,255,255,0.035)')
+    .attr('stroke-width', 0.5)
+    .attr('d', pathGen);
+
+  try {
+    const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.json());
+    svg.selectAll('.land')
+      .data(topojson.feature(world, world.objects.countries).features)
+      .join('path').attr('class', 'land')
+      .attr('d', pathGen)
+      .attr('fill', '#1a2636')
+      .attr('stroke', 'rgba(255,255,255,0.07)')
+      .attr('stroke-width', 0.4);
+    svg.append('path')
+      .datum(topojson.mesh(world, world.objects.countries, (a, b) => a !== b))
+      .attr('fill', 'none')
+      .attr('stroke', 'rgba(255,255,255,0.045)')
+      .attr('stroke-width', 0.3)
+      .attr('d', pathGen);
+  } catch (_) { /* network fallback — bubbles still render */ }
+
+  const maxV = d3.max(CITIES, d => d.v19);
+  const rScale = d3.scaleSqrt().domain([0, maxV]).range([0, 26]);
+
+  function animateBubbles() {
+    mapBox.classList.add('in');
+    CITIES.forEach((city, i) => {
+      const [cx, cy] = proj([city.lon, city.lat]);
+      const tr = rScale(city.v19);
+      const g = svg.append('g').style('cursor', 'pointer');
+
+      const ring = g.append('circle').attr('cx', cx).attr('cy', cy)
+        .attr('r', 0).attr('fill', 'none')
+        .attr('stroke', city.color).attr('stroke-width', 1).attr('stroke-opacity', 0.35);
+
+      const dot = g.append('circle').attr('cx', cx).attr('cy', cy)
+        .attr('r', 0)
+        .attr('fill', city.color).attr('fill-opacity', 0.65)
+        .attr('stroke', city.color).attr('stroke-width', 1.5);
+
+      const lbl = g.append('text')
+        .attr('x', cx + city.ldx).attr('y', cy + city.ldy - tr - 8)
+        .attr('text-anchor', city.la)
+        .attr('fill', city.color)
+        .attr('font-size', '10.5').attr('font-weight', '600')
+        .attr('font-family', 'Inter, sans-serif')
+        .style('opacity', 0).text(city.name);
+
+      setTimeout(() => {
+        dot.transition().duration(650).ease(d3.easeCubicOut).attr('r', tr);
+        ring.transition().duration(700).ease(d3.easeCubicOut).attr('r', tr + 6);
+        lbl.transition().delay(450).duration(320).style('opacity', 1);
+        function pulse() {
+          svg.insert('circle', 'g').attr('cx', cx).attr('cy', cy).attr('r', tr)
+            .attr('fill', 'none').attr('stroke', city.color)
+            .attr('stroke-width', 1.5).attr('stroke-opacity', 0.45)
+            .transition().duration(2400).ease(d3.easeLinear)
+            .attr('r', tr + 20).attr('stroke-opacity', 0).remove();
+        }
+        setTimeout(() => { pulse(); setInterval(pulse, 3600 + i * 700); }, 900);
+      }, i * 370);
+
+      g.on('mousemove', ev => {
+        tip.style.opacity = '1';
+        tip.style.left = (ev.clientX + 14) + 'px';
+        tip.style.top  = (ev.clientY - 34) + 'px';
+        tip.innerHTML = `<strong style="color:${city.color}">${city.name}</strong> &nbsp;·&nbsp; ${city.v19}M visitantes`;
+      }).on('mouseleave', () => { tip.style.opacity = '0'; });
+    });
+  }
+
+  whenVisible(mapBox, animateBubbles);
+})();
+
+// ── BAR CHART ─────────────────────────────────────────────────────────────────
+(function () {
+  const box = document.getElementById('bar-box');
+  let done = false;
+  whenVisible(box, () => {
+    if (done) return; done = true;
+    box.classList.add('in');
+    const ctx = document.getElementById('bar-chart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{ data: [], backgroundColor: [], borderRadius: 5, borderSkipped: false }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.55,
+        animation: { duration: 620, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => ` ${c.parsed.x}M visitantes` } }
+        },
+        scales: {
+          x: {
+            beginAtZero: true, max: 26,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { callback: v => v + 'M', color: '#8b949e', font: { size: 11 } }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: '#e6edf3', font: { size: 11, weight: '500' } }
+          }
+        }
+      }
+    });
+    let idx = 0;
+    (function add() {
+      if (idx >= CITIES.length) return;
+      const c = CITIES[idx];
+      chart.data.labels.push(`${c.name}  ·  ${c.country}`);
+      chart.data.datasets[0].data.push(c.v19);
+      chart.data.datasets[0].backgroundColor.push(c.color + 'bb');
+      chart.update(); idx++;
+      if (idx < CITIES.length) setTimeout(add, 460);
+    })();
+  });
+})();
+
+// ── LINE CHART ────────────────────────────────────────────────────────────────
+(function () {
+  const box = document.getElementById('line-box');
+  let done = false;
+
+  // Custom COVID annotation plugin
+  const covidPlugin = {
+    id: 'covidLine',
+    afterDraw(chart) {
+      const { ctx, chartArea, scales } = chart;
+      const x = scales.x.getPixelForValue(2020);
+      if (!x) return;
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = 'rgba(255,70,70,0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,100,100,0.88)';
+      ctx.font = '600 9.5px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('COVID-19', x + 6, chartArea.top + 15);
+      ctx.restore();
+    }
+  };
+
+  whenVisible(box, () => {
+    if (done) return; done = true;
+    box.classList.add('in');
+    const ctx = document.getElementById('line-chart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      plugins: [covidPlugin],
+      data: {
+        labels: TIME_DATA.years,
+        datasets: CITIES.map(c => ({
+          label: c.name,
+          data: TIME_DATA[c.name],
+          borderColor: c.color,
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 3.5,
+          pointBackgroundColor: c.color,
+          pointBorderColor: '#0d1117',
+          pointBorderWidth: 1.5,
+          tension: 0.35,
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.55,
+        animation: {
+          duration: 1800,
+          easing: 'easeInOutSine',
+          delay: ctx => ctx.datasetIndex * 240,
+        },
+        plugins: {
+          legend: {
+            display: true, position: 'bottom',
+            labels: { color: '#8b949e', font: { size: 10.5 }, boxWidth: 12, usePointStyle: true, padding: 16 }
+          },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y}M` } }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#8b949e', font: { size: 11 } }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { callback: v => v + 'M', color: '#8b949e', font: { size: 11 } },
+            title: { display: true, text: 'Millones de visitantes', color: '#8b949e', font: { size: 10 } }
+          }
+        }
+      }
+    });
+  });
+})();
+
+// ── BUBBLE / SCATTER CHART ───────────────────────────────────────────────────
+(function () {
+  const box = document.getElementById('scatter-box');
+  let done = false;
+
+  const labelsPlugin = {
+    id: 'bubbleLabels',
+    afterDatasetsDraw(chart) {
+      const c2 = chart.ctx;
+      chart.data.datasets.forEach((ds, di) => {
+        const meta = chart.getDatasetMeta(di);
+        if (!meta.data[0]) return;
+        const props = meta.data[0].getProps(['x', 'y'], true);
+        const r = meta.data[0].options.radius || 12;
+        c2.save();
+        c2.font = '600 10.5px Inter, sans-serif';
+        c2.fillStyle = ds.borderColor;
+        c2.textAlign = 'center';
+        c2.fillText(ds.label, props.x, props.y - r - 6);
+        c2.restore();
+      });
+    }
+  };
+
+  whenVisible(box, () => {
+    if (done) return; done = true;
+    box.classList.add('in');
+    const ctx = document.getElementById('scatter-chart').getContext('2d');
+    const maxRev = Math.max(...SCATTER.map(d => d.revenue));
+    new Chart(ctx, {
+      type: 'bubble',
+      plugins: [labelsPlugin],
+      data: {
+        datasets: SCATTER.map((d, i) => ({
+          label: d.name,
+          data: [{ x: d.visitors, y: d.spending, r: 10 + (d.revenue / maxRev) * 28 }],
+          backgroundColor: CITIES[i].color + '40',
+          borderColor: CITIES[i].color,
+          borderWidth: 2,
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.55,
+        animation: { duration: 1100 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: c => c[0].dataset.label,
+              label: c => {
+                const d = SCATTER.find(x => x.name === c.dataset.label);
+                return [` Visitantes: ${c.parsed.x}M`, ` USD ${c.parsed.y}/turista`, ` Ingresos: USD ${d.revenue}B`];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            min: 14, max: 25,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { callback: v => v + 'M', color: '#8b949e', font: { size: 11 } },
+            title: { display: true, text: 'Visitantes internacionales 2019 (M)', color: '#8b949e', font: { size: 10.5 } }
+          },
+          y: {
+            min: 800, max: 2050,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { callback: v => 'USD ' + v, color: '#8b949e', font: { size: 11 } },
+            title: { display: true, text: 'Gasto promedio por turista (USD)', color: '#8b949e', font: { size: 10.5 } }
+          }
+        }
+      }
+    });
+  });
+})();
+
+// ── ORIGIN CARDS ──────────────────────────────────────────────────────────────
+(function () {
+  const grid = document.getElementById('origins-grid');
+  ORIGINS.forEach((item, ci) => {
+    const city = CITIES.find(c => c.name === item.city);
+    const maxPct = Math.max(...item.list.map(o => o[2]));
+    const card = document.createElement('div');
+    card.className = 'o-card';
+    card.style.transitionDelay = (ci * 0.08) + 's';
+    card.innerHTML = `
+      <div class="o-head">
+        <div class="o-dot" style="background:${city.color}"></div>
+        <span class="o-city-name" style="color:${city.color}">${item.city}</span>
+      </div>
+      ${item.list.map(([flag, name, pct]) => `
+        <div class="o-row">
+          <div class="o-row-top">
+            <span>${flag}&nbsp;${name}</span>
+            <span class="o-pct">${pct}%</span>
+          </div>
+          <div class="o-track">
+            <div class="o-fill" style="background:${city.color}" data-w="${pct / maxPct * 100}"></div>
+          </div>
+        </div>
+      `).join('')}
+    `;
+    grid.appendChild(card);
+  });
+
+  whenVisible(document.getElementById('origins-viz'), () => {
+    grid.querySelectorAll('.o-card').forEach((card, i) => {
+      setTimeout(() => {
+        card.classList.add('in');
+        card.querySelectorAll('.o-fill').forEach(f => { f.style.width = f.dataset.w + '%'; });
+      }, i * 100);
+    });
+  });
+})();
+
+// ── CLOSING CARDS ─────────────────────────────────────────────────────────────
+(function () {
+  const row = document.getElementById('closing-cards');
+  CITIES.forEach(city => {
+    const el = document.createElement('div');
+    el.className = 'c-card fi';
+    el.innerHTML = `
+      <div class="c-card-city" style="color:${city.color}">${city.name}</div>
+      <div class="c-card-num"  style="color:${city.color}">${city.v23}M</div>
+      <div class="c-card-lbl">visitantes 2023</div>
+    `;
+    row.appendChild(el);
+    whenVisible(el, () => el.classList.add('in'));
+  });
+})();
+</script>
+</body>
+</html>
